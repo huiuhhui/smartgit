@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="./js/bootstrap-table.css">
+</head>
+
+<body>
+    <table data-toggle="table" id="tableLazy">
+    </table>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous">
+    </script>
+    <script src="./js/bootstrap-table.js"></script>
+    <script>
+        /**
+         * 节点集合类
+         * @class NodeList
+         * @constructor
+         * @param dom 表格元素
+         * url 请求的url
+         */
+        const ele = $('#tableLazy')
+        const urls = 'https://examples.wenzhixin.net.cn/examples/bootstrap_table/data'
+        const columns = [{
+            field: 'id',
+            title: 'Item ID'
+        }, {
+            field: 'name',
+            title: 'Item Name'
+        }, {
+            field: 'price',
+            title: 'Item Price'
+        }];
+        tabInit(ele, urls, columns)
+
+        function tabInit(dom, url, columns) {
+            let listArray = [] // 页面追加的数据
+            let offset = 0 // 页面的
+            let limit = 180 // 页面条数
+            let total = 0 // 数据总量
+            let dataEnd = true // 判断数据是否加载完毕 节流
+
+            // 请求列表数据 每次加载数据的时候的
+            function getLIst(offset, limit) {
+                $.ajax({
+                    type: "get",
+                    url: url,
+                    data: {
+                        limit: limit,
+                        offset: offset
+                    },
+                    success: function(res) {
+                        listArray = res.rows
+                        total = res.total
+                        dom.bootstrapTable("hideLoading");
+                        // 初始加载数据
+                        if (offset == 0) {
+                            dom.bootstrapTable('load', listArray)
+                        }
+                    }
+                });
+            }
+            dom.bootstrapTable({
+                height: 500,
+                ajax: getLIst(offset, limit),
+                pagination: true,
+                search: true,
+                pageNumber: 1,
+                queryParamsType: 'limit',
+                sidePagination: 'server',
+                pageSize: 20,
+                queryParams: function(params) {
+                    offset = params.offset
+                    limit = params.limit
+                    console.log(offset);
+                    let tmp = {
+                        limit: params.limit,
+                        offset: params.offset
+                    }
+                    return tmp
+                },
+                columns: columns,
+                onScrollBody: function() {
+                    // 监听table的内容滚动底部加载数据
+                    let scrollH = dom.parents('.fixed-table-body')[0].scrollHeight
+                    let scrollT = dom.parents('.fixed-table-body')[0].scrollTop
+                    let clientH = dom.parents('.fixed-table-body')[0].clientHeight
+
+                    // 判断是否滚动到底部加载数据元素追加到数据到table表格
+                    let distance = scrollH - scrollT - clientH
+                    if (Math.floor(distance) <= 0) {
+                        // 判断数据是否加载完毕提示
+                        offset = offset + 180
+                        console.log(offset)
+                        if (offset > total && dataEnd) {
+                            alert('数据已全部加载')
+                            dataEnd = false
+                        }
+                        // 后台请求数据接口
+                        if (offset <= total) {
+                            getLIst(offset, 180)
+                            dom.bootstrapTable("showLoading");
+                            dom.bootstrapTable('append', listArray)
+                        }
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>
